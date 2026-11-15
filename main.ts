@@ -1,34 +1,27 @@
 import { createHash } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const sourcePath = join(here, "entry.png");
-const outputDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
-const outputPath = join(outputDir, "entry.png");
+const source = join(here, "entry.png");
+const outDir = process.env.MAKEFUN_OUTPUT_DIR || "/output";
+const dest = join(outDir, "entry.png");
 
-if (!existsSync(sourcePath)) {
-  throw new Error(`entry.png not found beside main.ts: ${sourcePath}`);
-}
+const input = readFileSync(source);
+const inputHash = createHash("sha256").update(input).digest("hex");
 
-mkdirSync(outputDir, { recursive: true });
-copyFileSync(sourcePath, outputPath);
+mkdirSync(outDir, { recursive: true });
+copyFileSync(source, dest);
 
-const sourceBytes = readFileSync(sourcePath);
-const outputBytes = readFileSync(outputPath);
+const output = readFileSync(dest);
+const outputHash = createHash("sha256").update(output).digest("hex");
 
-const sha256 = (data: Buffer): string =>
-  createHash("sha256").update(data).digest("hex");
-
-const sourceHash = sha256(sourceBytes);
-const outputHash = sha256(outputBytes);
-
-if (sourceHash !== outputHash) {
+if (outputHash !== inputHash) {
   throw new Error(
-    `entry.png copy failed integrity check: source sha256 ${sourceHash} != output sha256 ${outputHash}`,
+    `entry.png copy mismatch: source sha256 ${inputHash} != output sha256 ${outputHash}`,
   );
 }
 
-console.log(`Copied entry.png (${sourceBytes.length} bytes) to ${outputPath}`);
-console.log(`sha256: ${sourceHash}`);
+console.log(`copied entry.png (${statSync(dest).size} bytes) -> ${dest}`);
+console.log(`sha256: ${outputHash}`);
