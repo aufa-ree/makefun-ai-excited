@@ -1,3 +1,6 @@
+// Dragon Wave image entry for make.fun ai-excited-01.
+// Deterministically copies entry.png to the output dir (MAKEFUN_OUTPUT_DIR,
+// default /output) and verifies the copy with a sha256 integrity check.
 import { createHash } from "node:crypto";
 import { copyFileSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -23,5 +26,6 @@ if (outputHash !== inputHash) {
   );
 }
 
-console.log(`copied entry.png (${statSync(dest).size} bytes) -> ${dest}`);
-console.log(`sha256: ${outputHash}`);
+console.log(
+  `copied ${statSync(dest).size} bytes, sha256 ${outputHash} -> ${dest}`,
+);
