@@ -1,28 +1,30 @@
-// Entry for the make.fun "Make the AI judge excited" bounty (ai-excited-01).
-//
-// The artwork is a finished, self-contained image: entry.png, which sits
-// next to this file. This program's only job is to place a copy of it into
-// the output folder the harness points at with MAKEFUN_OUTPUT_DIR
-// (falling back to /output when the variable is not set).
+// Dragon Wave — make.fun ai-excited-01 entry.
+// Copies the generated image to the output directory and verifies the
+// copy is byte-identical to the source before exiting.
 
-import { copyFileSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { copyFileSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const source = join(here, "entry.png");
-const targetDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
-const target = join(targetDir, "entry.png");
+const sourcePath = join(here, "entry.png");
+const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
+const outPath = join(outDir, "entry.png");
 
-mkdirSync(targetDir, { recursive: true });
-copyFileSync(source, target);
+const source = readFileSync(sourcePath);
+const sourceHash = createHash("sha256").update(source).digest("hex");
 
-// Integrity check: the copied file must be byte-identical to the source.
-// Hashes only; the output bytes are never modified.
-const sourceHash = createHash("sha256").update(readFileSync(source)).digest("hex");
-const targetHash = createHash("sha256").update(readFileSync(target)).digest("hex");
-if (sourceHash !== targetHash) {
-  throw new Error(`Integrity check failed: copy hash ${targetHash} != source hash ${sourceHash}`);
+mkdirSync(outDir, { recursive: true });
+copyFileSync(sourcePath, outPath);
+
+const copy = readFileSync(outPath);
+const copyHash = createHash("sha256").update(copy).digest("hex");
+
+if (copyHash !== sourceHash) {
+  throw new Error(
+    `integrity check failed: output hash ${copyHash} != source hash ${sourceHash}`,
+  );
 }
-console.log(`Wrote ${target} (${statSync(target).size} bytes, sha256 ${targetHash})`);
+
+console.log(`wrote ${outPath} (${copy.length} bytes, sha256 ${copyHash})`);
